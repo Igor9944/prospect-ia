@@ -28,7 +28,11 @@ class GmailService:
         """Initialize the Gmail service."""
         self.creds = None
         self.service = None
-        self._authenticate()
+        try:
+            self._authenticate()
+        except Exception as e:
+            logger.warning(f"Failed to initialize Gmail service: {e}. Gmail functionality will be unavailable.")
+            # Keep service as None
     
     def _authenticate(self):
         """Authenticate with Gmail API using OAuth2."""
@@ -82,6 +86,9 @@ class GmailService:
         Returns:
             Dictionary with sent message details
         """
+        
+        self._ensure_service_available()
+        
         try:
             # Validate email
             if not to or '@' not in to:
@@ -265,6 +272,13 @@ class GmailService:
         emails = re.findall(email_pattern, text)
         # Normalize to lowercase and deduplicate
         return list(set(email.lower() for email in emails))
+
+    def _ensure_service_available(self):
+        '''Ensure that the Gmail service is initialized.'''
+        if self.service is None:
+            raise RuntimeError('Gmail service not configured. Check GMAIL_CREDENTIALS_PATH and GMAIL_TOKEN_PATH in .env')
+
+
 
 # Global instance
 gmail = GmailService()
