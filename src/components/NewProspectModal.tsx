@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Prospect } from '../types';
+import { apiFetch } from '../lib/api';
 import { X, Sparkles, Plus, RefreshCw } from 'lucide-react';
 
 interface NewProspectModalProps {
@@ -33,7 +34,7 @@ export const NewProspectModal: React.FC<NewProspectModalProps> = ({
     }
     setIsAutoEnriching(true);
     try {
-      const res = await fetch('/api/enrich', {
+      const res = await apiFetch('/api/enrich', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, company, role, industry, website, currentNotes: notes }),

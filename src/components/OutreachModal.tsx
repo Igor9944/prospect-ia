@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Prospect, OutreachConfig, GeneratedOutreach } from '../types';
+import { apiFetch } from '../lib/api';
 import { 
   X, 
   Sparkles, 
@@ -47,7 +48,7 @@ export const OutreachModal: React.FC<OutreachModalProps> = ({
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/generate-outreach', {
+      const response = await apiFetch('/api/generate-outreach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

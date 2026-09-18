@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Prospect, PipelineStage } from './types';
+import { apiFetch } from './lib/api';
 import { INITIAL_PROSPECTS } from './data/mockProspects';
 import { Navbar } from './components/Navbar';
 import { AnalyticsStats } from './components/AnalyticsStats';
@@ -66,7 +67,7 @@ export const App: React.FC = () => {
 
   const handleEnrichProspect = async (prospect: Prospect) => {
     try {
-      const res = await fetch('/api/enrich', {
+      const res = await apiFetch('/api/enrich', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

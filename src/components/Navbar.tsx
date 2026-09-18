@@ -9,6 +9,7 @@ import {
   Search,
   Zap
 } from 'lucide-react';
+import { BackendStatus } from './BackendStatus';
 
 interface NavbarProps {
   currentView: 'list' | 'kanban' | 'analytics';
@@ -96,6 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Search & Actions */}
           <div className="flex items-center gap-2.5">
+            <BackendStatus />
             <div className="relative hidden md:block w-48 lg:w-64">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input

@@ -1,16 +1,44 @@
 import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3001;
 
 app.use(express.json({ limit: "5mb" }));
+
+// GitHub Pages (public HTTPS) → local API (private HTTP) needs CORS + Private Network Access.
+app.use((req, res, next) => {
+  const origin = req.headers.origin || "";
+  const allowListed = (process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const allowed =
+    !origin ||
+    allowListed.includes("*") ||
+    allowListed.includes(origin) ||
+    origin.endsWith(".github.io") ||
+    origin.startsWith("http://localhost") ||
+    origin.startsWith("http://127.0.0.1");
+
+  if (origin && allowed) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  } else if (!origin) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
+
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Private-Network", "true");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
 
 function getGenAI(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -18,12 +46,14 @@ function getGenAI(): GoogleGenAI | null {
   return new GoogleGenAI({ apiKey });
 }
 
-// Health check
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    gemini: Boolean(process.env.GEMINI_API_KEY),
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// AI Prospect Enrichment & Analysis endpoint
 app.post("/api/enrich", async (req, res) => {
   try {
     const { name, company, role, industry, website, currentNotes } = req.body;
@@ -63,10 +93,9 @@ Provide a structured JSON response with:
       }
     }
 
-    // Heuristic intelligent fallback when API key is not configured
     const calculatedFit = Math.floor(75 + Math.random() * 22);
     const calculatedIntent = Math.floor(68 + Math.random() * 26);
-    
+
     return res.json({
       success: true,
       source: "heuristic",
@@ -95,7 +124,6 @@ Provide a structured JSON response with:
   }
 });
 
-// AI Outreach Generator endpoint
 app.post("/api/generate-outreach", async (req, res) => {
   try {
     const { prospect, senderName, senderCompany, valueProp, tone, language, channel } = req.body;
@@ -144,7 +172,6 @@ Provide a structured JSON output with:
       }
     }
 
-    // Heuristic generator fallback
     const prospectName = prospect?.name?.split(" ")[0] || "there";
     const comp = prospect?.company || "your team";
     const userRole = prospect?.role || "leader";
@@ -185,28 +212,6 @@ Provide a structured JSON output with:
   }
 });
 
-// Vite middleware & Static serving
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (_req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Prospect IA] Server listening on http://0.0.0.0:${PORT}`);
-  });
-}
-
-startServer().catch((err) => {
-  console.error("Failed to start server:", err);
-  process.exit(1);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`[Prospect IA] Local API on http://127.0.0.1:${PORT}`);
 });
